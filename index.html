@@ -1372,11 +1372,11 @@
             onQrCodeDetected(text);
           };
           try {
-            await reader.start(deviceId || { facingMode: {ideal:'environment'} }, config, detected, () => {});
+            await reader.start(deviceId || { facingMode: 'environment' }, config, detected, () => {});
           } catch (err) {
             if (generation !== QR.generation) return;
             // A desktop camera may not satisfy a facingMode constraint.
-            if (/Overconstrained|ConstraintNotSatisfied|NotFound/i.test(String(err))) await reader.start({ facingMode: {ideal:'user'} }, config, detected, () => {});
+            if (/Overconstrained|ConstraintNotSatisfied|NotFound/i.test(String(err))) await reader.start({ facingMode: 'user' }, config, detected, () => {});
             else throw err;
           }
           // start() resolves before the library initializes its canvas on 'playing'.
