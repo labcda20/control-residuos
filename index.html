@@ -804,7 +804,7 @@
         });
       } else {
         if (!STATE.apiUrl) throw new Error('Configura la URL de Google Apps Script.');
-        const response = await fetch(STATE.apiUrl, {
+        const response = await fetch(idToken?'https://script.google.com/macros/s/AKfycby_jlYcqevml8S2RNmgbuZVggDO1SiQv5nO-5Ram1fnCI4gOmIFvaJRQYkcLi1axl7h/exec':STATE.apiUrl, {
           method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ ...data, action })
         });
@@ -1353,7 +1353,7 @@
       QR.found = false;
       resetQrResult();
       cameraControls(false, true);
-      cameraStatus('Solicitando cámara… Acepta el permiso en tu navegador.');
+      cameraStatus('Solicitando acceso a la cámara. Pulsa Permitir en tu navegador.');
       document.getElementById('camera-diagnostics').classList.add('hidden');
       return enqueueQr(async () => {
         try {
@@ -1372,16 +1372,17 @@
             onQrCodeDetected(text);
           };
           try {
-            await reader.start(deviceId || { facingMode: 'environment' }, config, detected, () => {});
+            await reader.start(deviceId || { facingMode: {ideal:'environment'} }, config, detected, () => {});
           } catch (err) {
             if (generation !== QR.generation) return;
             // A desktop camera may not satisfy a facingMode constraint.
-            if (/Overconstrained|ConstraintNotSatisfied|NotFound/i.test(String(err))) await reader.start({ facingMode: 'user' }, config, detected, () => {});
+            if (/Overconstrained|ConstraintNotSatisfied|NotFound/i.test(String(err))) await reader.start({ facingMode: {ideal:'user'} }, config, detected, () => {});
             else throw err;
           }
           // start() resolves before the library initializes its canvas on 'playing'.
           // Wait for that event before allowing teardown or another scan.
           const video = document.querySelector('#qr-reader video');
+          if(video){video.muted=true;video.autoplay=true;video.playsInline=true;video.setAttribute('playsinline','');}
           if (video && !reader.isScanning) {
             await new Promise((resolve, reject) => {
               const ready = () => { clearTimeout(timeout); resolve(); };
@@ -1796,8 +1797,11 @@ window.waterlabsBridge=(()=>{
   }
   return {get active(){return active;}, async credential(){return active?token():null;}, stop(){active=false;blocked=true;for(const job of pending.values()){clearTimeout(job.timer);job.reject(new Error('Sesión cerrada.'));}pending.clear();}, async start(){
     if(!enabled)return;
+    let status=document.getElementById('waterlabs-entry-status');
+    if(!status){status=document.createElement('p');status.id='waterlabs-entry-status';status.setAttribute('role','status');status.style.cssText='font-size:13px;line-height:1.5;color:#1e3a8a;text-align:center;margin-top:12px';document.querySelector('#view-login > div')?.append(status);}
+    status.textContent='Confirmando tu acceso desde Mi Laboratorio…';
     try{const idToken=await token();active=true;const result=await sendBackendRequest('loginSuite',{idToken});if(!result?.success)throw new Error(result?.error||'Acceso no autorizado.');window.applySuiteSession(result);}
-    catch(error){active=false;showToast(error.message,'error');}
+    catch(error){active=false;status.textContent=error.message;showToast(error.message,'error');}
   }};
 })();
 document.addEventListener('DOMContentLoaded',()=>window.waterlabsBridge.start());
